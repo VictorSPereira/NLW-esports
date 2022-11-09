@@ -2,10 +2,12 @@ import express, { request } from "express";
 import { PrismaClient } from "@prisma/client"
 import { convertHourToMinutes } from "./utils/convert-hour-in-minutes";
 import { convertMinutesToHour } from "./utils/convert-Minutes-To-Hour";
+import cors from 'cors'
 
 const app = express()
 const prisma = new PrismaClient()
 app.use(express.json())
+app.use(cors())
 
 app.get('/games', async (request, response) => {
     const games = await prisma.game.findMany({
@@ -21,12 +23,12 @@ app.get('/games', async (request, response) => {
 })
 
 app.post('/games/:id/ads', async (request, response) => {
-    const gameId : any = request.params.id
+    const gameId = request.params.id
     const body : any = request.body
 
     const ad = await prisma.ad.create({
         data: {
-            gameId,
+            gameId: gameId,
             name: body.name,
             yearsPlaying: body.yearsPlaying,
             discord: body.discord,
@@ -36,7 +38,6 @@ app.post('/games/:id/ads', async (request, response) => {
             useVoiceChanel: body.useVoiceChanel
         }
     })
-    console.log(ad, 'teste')
     return response.status(201).json(ad)
 })
 
@@ -61,7 +62,7 @@ app.get('/games/:id/ads', async (request, response) => {
         }
     })
 
-    return response.json(ads.map(ad => {
+    return response.json(ads.map((ad) => {
         return{
         ...ad,
         weekDays: ad.weekDays.split(','),
@@ -72,19 +73,20 @@ app.get('/games/:id/ads', async (request, response) => {
 })
 
 app.get('/ads/:id/discord', async (request, response) => {
-    const adId = request.params.id
-
-    const ad = await prisma.ad.findFirstOrThrow({
-        select: {
-            discord: true
-        },
-        where: {
-            id: adId
-        }
-    })
+    const adId = request.params.id;
+  
+    const ad = await prisma.ad.findUniqueOrThrow({
+      select: {
+        discord: true,
+      },
+      where: {
+        id: adId,
+      }
+    });
+  
     return response.json({
-        discord: ad.discord
+      discord: ad.discord,
     })
-})
+  });
 
 app.listen("3333", () => console.log("Server On"))
